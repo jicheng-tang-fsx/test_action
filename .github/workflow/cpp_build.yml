@@ -1,0 +1,60 @@
+name: C++ Build and Release Workflow
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up CMake and Ninja
+      uses: lukka/get-cmake@v3
+      with:
+        cmake-version: '3.20.x'
+
+    - name: Create build directory
+      run: mkdir -p build
+
+    - name: Configure CMake
+      run: cmake -S . -B build -G Ninja
+
+    - name: Build with CMake
+      run: cmake --build build --config Release
+
+    - name: Archive build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: my-artifacts
+        path: build/
+
+    - name: Create Release
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.run_number }}
+        release_name: Release-${{ github.run_number }}
+        draft: false
+        prerelease: false
+
+    - name: Upload release asset
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./build/my-artifact.zip
+        asset_name: my-artifact.zip
+        asset_content_type: application/zip
