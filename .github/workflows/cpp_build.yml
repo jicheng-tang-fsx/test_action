@@ -1,12 +1,9 @@
-name: C++ Build and Release with Custom Docker Image
+name: C++ Build and Release
 
 on:
   push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+    tags:
+      - 'v*'
 
 jobs:
   build-and-release:
@@ -33,26 +30,19 @@ jobs:
     - name: Build with CMake and Make
       run: cmake --build build --config Release
 
-    - name: Archive build artifacts
-      uses: actions/upload-artifact@v3
-      with:
-        name: my-artifacts
-        path: build/
-
     - name: Create Release
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       id: create_release
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ github.run_number }}
-        release_name: Release-${{ github.run_number }}
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        body: 'Description of the release'
         draft: false
         prerelease: false
 
-    - name: Upload release asset
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    - name: Upload Release Asset
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
